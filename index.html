@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil Lycée</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="profile-section">
+            <h1>Mon Profil Scolaire</h1>
+            
+            <div class="profile-form">
+                <div class="form-group">
+                    <label for="lastname">Nom :</label>
+                    <input type="text" id="lastname" placeholder="Votre nom">
+                </div>
+                
+                <div class="form-group">
+                    <label for="firstname">Prénom :</label>
+                    <input type="text" id="firstname" placeholder="Votre prénom">
+                </div>
+                
+                <div class="form-group">
+                    <label for="status">Statut :</label>
+                    <select id="status">
+                        <option value="eleve">Élève</option>
+                        <option value="prof">Professeur</option>
+                        <option value="admin">Administration</option>
+                        <option value="autre">Autre</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="class">Classe (si élève) :</label>
+                    <input type="text" id="class" placeholder="Ex: 1ère S">
+                </div>
+                
+                <div class="form-group">
+                    <label for="photo">Photo de profil :</label>
+                    <input type="file" id="photo" accept="image/*">
+                </div>
+                
+                <button id="saveProfile">Enregistrer mon profil</button>
+            </div>
+            
+            <div class="profile-display" id="profileDisplay" style="display:none;">
+                <img id="profilePhoto" src="" alt="Photo de profil">
+                <h2 id="displayName"></h2>
+                <p id="displayStatus"></p>
+                <p id="displayClass"></p>
+            </div>
+        </div>
+        
+        <div class="chat-section">
+            <h2>Chat Scolaire</h2>
+            <div class="chat-messages" id="chatMessages"></div>
+            
+            <div class="chat-input">
+                <input type="text" id="messageInput" placeholder="Écrivez votre message...">
+                <button id="sendMessage">Envoyer</button>
+            </div>
+            
+            <div class="questions-section">
+                <h3>Poser une question</h3>
+                <textarea id="questionInput" placeholder="Écrivez votre question ici..."></textarea>
+                <button id="postQuestion">Poster la question</button>
+                
+                <div class="questions-list" id="questionsList"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
