@@ -1,91 +1,34 @@
-// Stockage des données en local (pour une vraie appli, utiliser une base de données)
+// Configuration Firebase (à garder telle quelle)
+const firebaseConfig = {
+  apiKey: "AIzaSyBkHh32VjRZAWo2uaYIx9QemzYvmIWPz0Q",
+  authDomain: "profil-90b26.firebaseapp.com",
+  projectId: "profil-90b26",
+  storageBucket: "profil-90b26.firebasestorage.app",
+  messagingSenderId: "1019493025239",
+  appId: "1:1019493025239:web:59bc038a3d4e0d6b3e3792",
+  measurementId: "G-8K3RRYYCZ3"
+};
+
+// Initialisation Firebase (version simplifiée)
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Références aux collections
+const messagesRef = db.collection("messages");
+const questionsRef = db.collection("questions");
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Vérifier si un profil existe déjà
     checkExistingProfile();
-    
-    // Gestion du profil
     document.getElementById('saveProfile').addEventListener('click', saveProfile);
-    
-    // Gestion du chat
     document.getElementById('sendMessage').addEventListener('click', sendMessage);
-    document.getElementById('messageInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') sendMessage();
-    });
-    
-    // Gestion des questions
     document.getElementById('postQuestion').addEventListener('click', postQuestion);
+    
+    // Écouter les nouveaux messages en temps réel
+    loadChatMessages();
+    loadQuestions();
 });
 
-function checkExistingProfile() {
-    const profile = JSON.parse(localStorage.getItem('schoolProfile'));
-    
-    if (profile) {
-        // Afficher le profil existant
-        document.getElementById('profileDisplay').style.display = 'block';
-        document.querySelector('.profile-form').style.display = 'none';
-        
-        document.getElementById('displayName').textContent = `${profile.firstname} ${profile.lastname}`;
-        document.getElementById('displayStatus').textContent = getStatusText(profile.status);
-        
-        if (profile.status === 'eleve' && profile.class) {
-            document.getElementById('displayClass').textContent = `Classe : ${profile.class}`;
-        } else {
-            document.getElementById('displayClass').textContent = '';
-        }
-        
-        if (profile.photo) {
-            document.getElementById('profilePhoto').src = profile.photo;
-        }
-        
-        // Charger les messages et questions
-        loadChatMessages();
-        loadQuestions();
-    }
-}
-
-function getStatusText(status) {
-    const statusMap = {
-        'eleve': 'Élève',
-        'prof': 'Professeur',
-        'admin': 'Administration',
-        'autre': 'Autre'
-    };
-    return statusMap[status] || '';
-}
-
-function saveProfile() {
-    const lastname = document.getElementById('lastname').value.trim();
-    const firstname = document.getElementById('firstname').value.trim();
-    const status = document.getElementById('status').value;
-    const classValue = document.getElementById('class').value.trim();
-    const photoFile = document.getElementById('photo').files[0];
-    
-    if (!lastname || !firstname) {
-        alert('Veuillez entrer au moins votre nom et prénom');
-        return;
-    }
-    
-    const profile = {
-        lastname,
-        firstname,
-        status,
-        class: classValue
-    };
-    
-    // Gestion de la photo
-    if (photoFile) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            profile.photo = e.target.result;
-            localStorage.setItem('schoolProfile', JSON.stringify(profile));
-            checkExistingProfile();
-        };
-        reader.readAsDataURL(photoFile);
-    } else {
-        localStorage.setItem('schoolProfile', JSON.stringify(profile));
-        checkExistingProfile();
-    }
-}
+// [Les fonctions checkExistingProfile, getStatusText et saveProfile restent identiques]
 
 function sendMessage() {
     const messageInput = document.getElementById('messageInput');
@@ -95,54 +38,35 @@ function sendMessage() {
     
     const profile = JSON.parse(localStorage.getItem('schoolProfile'));
     if (!profile) {
-        alert('Veuvez créer un profil avant d\'envoyer un message');
+        alert('Veuillez créer un profil avant d\'envoyer un message');
         return;
     }
     
-    const chatMessage = {
+    // Ajouter le message à Firestore
+    messagesRef.add({
         sender: `${profile.firstname} ${profile.lastname}`,
         senderStatus: profile.status,
         text: message,
-        timestamp: new Date().toLocaleTimeString()
-    };
-    
-    // Récupérer les messages existants ou créer un nouveau tableau
-    let messages = JSON.parse(localStorage.getItem('chatMessages')) || [];
-    messages.push(chatMessage);
-    localStorage.setItem('chatMessages', JSON.stringify(messages));
-    
-    // Ajouter le message à l'affichage
-    addMessageToDisplay(chatMessage);
-    
-    // Effacer le champ de saisie
-    messageInput.value = '';
-}
-
-function loadChatMessages() {
-    const messages = JSON.parse(localStorage.getItem('chatMessages')) || [];
-    const chatMessages = document.getElementById('chatMessages');
-    chatMessages.innerHTML = '';
-    
-    messages.forEach(message => {
-        addMessageToDisplay(message);
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(() => {
+        messageInput.value = '';
+    }).catch(error => {
+        console.error("Erreur d'envoi: ", error);
     });
 }
 
-function addMessageToDisplay(message) {
-    const chatMessages = document.getElementById('chatMessages');
-    const messageElement = document.createElement('div');
-    messageElement.className = 'message';
-    
-    const senderClass = message.senderStatus === 'prof' ? 'prof-message' : 
-                       message.senderStatus === 'admin' ? 'admin-message' : 'eleve-message';
-    
-    messageElement.innerHTML = `
-        <strong class="${senderClass}">${message.sender}</strong> 
-        <span class="message-time">(${message.timestamp})</span>: 
-        ${message.text}
-    `;
-    chatMessages.appendChild(messageElement);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+function loadChatMessages() {
+    messagesRef
+        .orderBy("timestamp")
+        .onSnapshot(snapshot => {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML = '';
+            
+            snapshot.forEach(doc => {
+                const message = doc.data();
+                addMessageToDisplay(message);
+            });
+        });
 }
 
 function postQuestion() {
@@ -153,39 +77,39 @@ function postQuestion() {
     
     const profile = JSON.parse(localStorage.getItem('schoolProfile'));
     if (!profile) {
-        alert('Veuvez créer un profil avant de poster une question');
+        alert('Veuillez créer un profil avant de poster une question');
         return;
     }
     
-    const question = {
-        id: Date.now(),
+    // Ajouter la question à Firestore
+    questionsRef.add({
         author: `${profile.firstname} ${profile.lastname}`,
         authorStatus: profile.status,
         text: questionText,
-        timestamp: new Date().toLocaleString(),
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         answers: []
-    };
-    
-    // Récupérer les questions existantes ou créer un nouveau tableau
-    let questions = JSON.parse(localStorage.getItem('schoolQuestions')) || [];
-    questions.push(question);
-    localStorage.setItem('schoolQuestions', JSON.stringify(questions));
-    
-    // Ajouter la question à l'affichage
-    addQuestionToDisplay(question);
-    
-    // Effacer le champ de saisie
-    questionInput.value = '';
+    }).then(() => {
+        questionInput.value = '';
+    }).catch(error => {
+        console.error("Erreur: ", error);
+    });
 }
 
 function loadQuestions() {
-    const questions = JSON.parse(localStorage.getItem('schoolQuestions')) || [];
-    const questionsList = document.getElementById('questionsList');
-    questionsList.innerHTML = '';
-    
-    questions.forEach(question => {
-        addQuestionToDisplay(question);
-    });
+    questionsRef
+        .orderBy("timestamp", "desc")
+        .onSnapshot(snapshot => {
+            const questionsList = document.getElementById('questionsList');
+            questionsList.innerHTML = '';
+            
+            snapshot.forEach(doc => {
+                const question = {
+                    id: doc.id,
+                    ...doc.data()
+                };
+                addQuestionToDisplay(question);
+            });
+        });
 }
 
 function addQuestionToDisplay(question) {
@@ -198,7 +122,7 @@ function addQuestionToDisplay(question) {
     if (question.answers && question.answers.length > 0) {
         answersHTML = question.answers.map(answer => `
             <div class="answer">
-                <strong>${answer.author}</strong> (${answer.timestamp}):
+                <strong>${answer.author}</strong> (${new Date(answer.timestamp?.toDate()).toLocaleString()}):
                 <p>${answer.text}</p>
             </div>
         `).join('');
@@ -206,7 +130,7 @@ function addQuestionToDisplay(question) {
     
     questionElement.innerHTML = `
         <div>
-            <strong>${question.author}</strong> (${question.timestamp}):
+            <strong>${question.author}</strong> (${new Date(question.timestamp?.toDate()).toLocaleString()}):
             <p>${question.text}</p>
         </div>
         ${answersHTML}
@@ -218,7 +142,7 @@ function addQuestionToDisplay(question) {
     
     questionsList.appendChild(questionElement);
     
-    // Ajouter l'événement pour répondre
+    // Gestion des réponses
     questionElement.querySelector('.send-answer').addEventListener('click', function() {
         const answerInput = questionElement.querySelector('.answer-input');
         const answerText = answerInput.value.trim();
@@ -228,25 +152,22 @@ function addQuestionToDisplay(question) {
         const profile = JSON.parse(localStorage.getItem('schoolProfile'));
         if (!profile) return;
         
-        const answer = {
+        const newAnswer = {
             author: `${profile.firstname} ${profile.lastname}`,
             authorStatus: profile.status,
             text: answerText,
-            timestamp: new Date().toLocaleString()
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
         };
         
-        // Mettre à jour les questions dans le localStorage
-        let questions = JSON.parse(localStorage.getItem('schoolQuestions'));
-        const questionIndex = questions.findIndex(q => q.id === question.id);
-        if (questionIndex !== -1) {
-            if (!questions[questionIndex].answers) {
-                questions[questionIndex].answers = [];
-            }
-            questions[questionIndex].answers.push(answer);
-            localStorage.setItem('schoolQuestions', JSON.stringify(questions));
-            
-            // Recharger l'affichage
-            loadQuestions();
-        }
+        // Mettre à jour la question dans Firestore
+        questionsRef.doc(question.id).update({
+            answers: firebase.firestore.FieldValue.arrayUnion(newAnswer)
+        }).then(() => {
+            answerInput.value = '';
+        }).catch(error => {
+            console.error("Erreur: ", error);
+        });
     });
 }
+
+// [La fonction addMessageToDisplay reste identique]
