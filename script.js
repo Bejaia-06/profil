@@ -1,3 +1,8 @@
+firebase.firestore().enablePersistence()
+  .catch((err) => {
+    console.error("Erreur de persistance Firestore:", err);
+  });
+
 // Configuration Firebase (à garder telle quelle)
 const firebaseConfig = {
   apiKey: "AIzaSyBkHh32VjRZAWo2uaYIx9QemzYvmIWPz0Q",
