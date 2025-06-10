@@ -13,6 +13,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+const storage = firebase.storage(); // Initialisation du stockage
+
 // Références aux collections
 const messagesRef = db.collection("messages");
 const questionsRef = db.collection("questions");
@@ -29,28 +31,53 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function saveProfile() {
+    const lastname = document.getElementById('lastname').value.trim();
+    const firstname = document.getElementById('firstname').value.trim();
+    const status = document.getElementById('status').value;
+    const classValue = document.getElementById('class').value.trim();
     const photoFile = document.getElementById('photo').files[0];
-    
+
+    if (!lastname || !firstname) {
+        alert('Veuillez entrer au moins votre nom et prénom');
+        return;
+    }
+
     if (photoFile) {
-        const storageRef = firebase.storage().ref();
+        const storageRef = storage.ref(); // Utilisez la référence storage initialisée
         const fileRef = storageRef.child(`profiles/${Date.now()}_${photoFile.name}`);
         
         fileRef.put(photoFile).then((snapshot) => {
             return snapshot.ref.getDownloadURL();
         }).then((url) => {
-            saveProfileData(url); // Fonction à créer
+            const profile = {
+                lastname,
+                firstname,
+                status,
+                class: classValue,
+                photo: url
+            };
+            localStorage.setItem('schoolProfile', JSON.stringify(profile));
+            checkExistingProfile(); // Actualiser l'affichage
+        }).catch(error => {
+            console.error("Erreur upload photo:", error);
+            // Sauvegarde sans photo si échec
+            saveProfileData(null, lastname, firstname, status, classValue);
         });
     } else {
-        saveProfileData(null);
+        saveProfileData(null, lastname, firstname, status, classValue);
     }
 }
 
-function saveProfileData(photoUrl) {
+function saveProfileData(photoUrl, lastname, firstname, status, classValue) {
     const profile = {
-        // ... autres données
+        lastname,
+        firstname,
+        status,
+        class: classValue,
         photo: photoUrl || ''
     };
     localStorage.setItem('schoolProfile', JSON.stringify(profile));
+    checkExistingProfile();
 }
 
 function sendMessage() {
