@@ -171,3 +171,24 @@ function addQuestionToDisplay(question) {
 }
 
 // [La fonction addMessageToDisplay reste identique]
+function addMessageToDisplay(message) {
+    const chatMessages = document.getElementById('chatMessages');
+    const messageElement = document.createElement('div');
+    messageElement.className = 'message';
+    
+    const senderClass = message.senderStatus === 'prof' ? 'prof-message' : 
+                       message.senderStatus === 'admin' ? 'admin-message' : 'eleve-message';
+    
+    // Gestion des dates Firestore
+    const timestamp = message.timestamp?.toDate 
+        ? new Date(message.timestamp.toDate()).toLocaleString() 
+        : 'Maintenant';
+
+    messageElement.innerHTML = `
+        <strong class="${senderClass}">${message.sender}</strong>
+        <span class="message-time">(${timestamp})</span>:
+        ${message.text}
+    `;
+    chatMessages.appendChild(messageElement);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
