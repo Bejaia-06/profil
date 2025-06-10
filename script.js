@@ -20,6 +20,10 @@ const db = firebase.firestore();
 
 const storage = firebase.storage(); // Initialisation du stockage
 
+db.collection("test").doc("connection").get()
+  .then(() => console.log("Connecté à Firestore"))
+  .catch(e => console.error("Erreur connexion Firestore:", e));
+
 // Références aux collections
 const messagesRef = db.collection("messages");
 const questionsRef = db.collection("questions");
