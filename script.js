@@ -28,7 +28,30 @@ document.addEventListener('DOMContentLoaded', function() {
     loadQuestions();
 });
 
-// [Les fonctions checkExistingProfile, getStatusText et saveProfile restent identiques]
+function saveProfile() {
+    const photoFile = document.getElementById('photo').files[0];
+    
+    if (photoFile) {
+        const storageRef = firebase.storage().ref();
+        const fileRef = storageRef.child(`profiles/${Date.now()}_${photoFile.name}`);
+        
+        fileRef.put(photoFile).then((snapshot) => {
+            return snapshot.ref.getDownloadURL();
+        }).then((url) => {
+            saveProfileData(url); // Fonction à créer
+        });
+    } else {
+        saveProfileData(null);
+    }
+}
+
+function saveProfileData(photoUrl) {
+    const profile = {
+        // ... autres données
+        photo: photoUrl || ''
+    };
+    localStorage.setItem('schoolProfile', JSON.stringify(profile));
+}
 
 function sendMessage() {
     const messageInput = document.getElementById('messageInput');
